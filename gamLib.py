@@ -3,32 +3,48 @@ from matplotlib import pyplot as plt
 import numpy as np
 import glob
 
+#Criando a classe Sample que cria um objeto!
 class Sample:
     def __init__(self, heigth,formation):
         self.heigth = heigth
         self.formation = formation
         
         if formation == 'limestone':
-            self.atenuation = 0.209998
+            self.attenuation = 0.209998
+        elif formation == 'sandstone':
+            self.attenuation = 0.199999
+        
+    def intensity_zero(self,filelist):
+        sampleRaw = pd.concat([pd.read_csv(item, names=[item[19:-4]]) for item in filelist], axis=1)
+        self.iniIntensity = sampleRaw.iloc[[0,1,2,11,12,13]].mean().mean()
+        
+        return self.iniIntensity
     
     def li_attenuation(self,filelist):
+        iniIntensity = self.intensity_zero(filelist)
         sampleRaw = pd.concat([pd.read_csv(item, names=[item[19:-4]]) for item in filelist], axis=1)
-        iniIntensity = sampleRaw.iloc[[0,1,2,11,12,13]].mean().mean()
-        sampleRaw['relatInt'] = sampleRaw.mean(axis=1)/iniIntensity
-        sampleRaw['mi'] = -1*np.log(sampleRaw['relatInt'])/self.heigth
+        #iniIntensity = sampleRaw.iloc[[0,1,2,11,12,13]].mean().mean()
+        
+        sampleRaw['relatInt-00'] = sampleRaw['0']/iniIntensity
+        sampleRaw['relatInt-45'] = sampleRaw['45']/iniIntensity
+        sampleRaw['relatInt-90'] = sampleRaw['90']/iniIntensity
+        sampleRaw['relatInt-135'] = sampleRaw['135']/iniIntensity
+        
+        sampleRaw['mi-00'] = -1*np.log(sampleRaw['relatInt-00'])/self.heigth
+        sampleRaw['mi-45'] = -1*np.log(sampleRaw['relatInt-45'])/self.heigth
+        sampleRaw['mi-90'] = -1*np.log(sampleRaw['relatInt-90'])/self.heigth
+        sampleRaw['mi-135'] = -1*np.log(sampleRaw['relatInt-135'])/self.heigth
         
         sample =sampleRaw.iloc[[3,4,5,6,7,8,9,10]]
-        print(sample['mi'])
-        return (sample['mi']) 
-
+        return sample[['mi-00','mi-45','mi-90','mi-135']]
         
-
     def porosity(self,filelist):
         sampleRaw = pd.concat([pd.read_csv(item, names=[item[19:-4]]) for item in filelist], axis=1)
-        iniIntensity = sampleRaw.iloc[[0,1,2,11,12,13]].mean().mean()
+        #iniIntensity = sampleRaw.iloc[[0,1,2,11,12,13]].mean().mean()
+        iniIntensity = self.intensity_zero(filelist)
         sampleRaw['relatInt'] = sampleRaw.mean(axis=1)/iniIntensity
         sampleRaw['mi'] = -1*np.log(sampleRaw['relatInt'])/self.heigth
-        sampleRaw['porosity'] = (self.atenuation-sampleRaw['mi'])/self.atenuation
+        sampleRaw['porosity'] = (self.attenuation-sampleRaw['mi'])/self.attenuation
         
         sample =sampleRaw.iloc[[3,4,5,6,7,8,9,10]]
         return (sample['porosity']*100) 
@@ -41,8 +57,10 @@ hePorosity = [16.55, 16.17, 6.27, 24.38, 27.29, 21.05, 9.89, 22.71, 24.39, 25.21
 filelist = []
 for files in glob.glob(path):
     filelist.append(files)
+    
+myRock = Sample(heigthList[0],'limestone')
 
-
+'''
 porosidade = []
 atenuacao = []
 pos = 0
@@ -52,29 +70,26 @@ for i in range(0,10):
     pos+=4
 
 
-fig, axs = plt.subplots(5, 2,sharex=True,sharey=True)
-#plt.subplots_adjust(wspace=0, hspace = 1)
-x = np.linspace(0, 35, 8)
+
+
+
+fig, axs = plt.subplots(5, 2, sharey=True,sharex=True, figsize=(6, 12))
+x = np.linspace(0,35,8)
 k = 0
+
 for i in range(0,5):
     for j in range(0,2):
-        axs[i, j].plot(x, atenuacao[k],'.')
-        ratio = 1.0
-        axs[i,j].set_aspect(100)
-        axs[i,j].grid(True)
-        axs[i, j].set_title('Sample '+str(k))
+        axs[i,j].plot(x,atenuacao[k],'.')
+        axs[i,j].set_xlabel('Displacement [mm]')
+        axs[i,j].set_ylabel('L. Attenuation [cm-1]')
+        axs[i,j].set_title('Sample '+str(k+1))
         k+=1
-        
-for ax in fig.get_axes():
-    ax.label_outer()
-    
-'''
-plt.boxplot(porosidade,labels=['VN01','VN02','VN04','VN05','5','6','7','8','9','10'])
-plt.xlabel('Samples')
-plt.ylabel('Gamma-porosity')
-'''
 
-
+#plt.legend(['0','45','90','135'], ncol=4,loc="lower center")
+fig.tight_layout() 
+fig.subplots_adjust(bottom=0.1)
+fig.legend(['0','45','90','135'], loc="lower center", ncol=4)
+'''
 
 
 
